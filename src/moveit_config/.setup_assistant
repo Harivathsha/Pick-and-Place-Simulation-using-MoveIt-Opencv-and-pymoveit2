@@ -1,0 +1,25 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: hv_arm
+    relative_path: urdf/hv_arm.xacro
+  srdf:
+    relative_path: config/panda.srdf
+  package_settings:
+    author_name: Harivathsha
+    author_email: r.harivathsha@iitg.ac.in
+    generated_timestamp: 1775307769
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity
+  modified_urdf:
+    xacros:
+      - control_xacro
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<robot name="hv_arm" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find hv_arm)/urdf/materials.xacro" />
+  <xacro:include filename="$(find hv_arm)/urdf/hv_arm.xacro" />
+  <xacro:include filename="$(find hv_arm)/urdf/sensors.xacro" />
+  <xacro:include filename="$(find hv_arm)/urdf/gazebo.xacro" />
+  <xacro:include filename="$(find hv_arm)/urdf/ros2_control.xacro" />
+    
+</robot>
