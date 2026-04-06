@@ -243,6 +243,16 @@ ros2 launch moveit_config moveit.launch.py
 ```bash
 ros2 run pymoveit2 pick_and_place.py
 ```
+<img width="1857" height="1170" alt="Screenshot from 2026-04-06 17-24-30" src="https://github.com/user-attachments/assets/e5abb130-ac05-4a3a-88cd-fc5a28dd6d03" />
+
+
+<img width="1857" height="1170" alt="Screenshot from 2026-04-06 17-24-45" src="https://github.com/user-attachments/assets/2e46cb7e-08a0-468f-8552-6e92da956542" />
+
+
+<img width="1857" height="1170" alt="Screenshot from 2026-04-06 17-25-30" src="https://github.com/user-attachments/assets/6acfbfe3-7cdd-41f8-837e-99974db86bb1" />
+
+
+[Screencast from 2026-04-06 17-27-47.webm](https://github.com/user-attachments/assets/1943e85a-5090-454c-ab39-e48829055edd)
 
 ---
 
