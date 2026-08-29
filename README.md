@@ -13,7 +13,8 @@ An autonomous robotic manipulation pipeline in which a simulated Franka Emika Pa
 
 ## Demo
 
-[![Watch the complete pick–shake–place demo](docs/media/04_continuous_shake.png)](docs/media/05_complete_pick_shake_place.mp4?raw=1)
+
+https://github.com/user-attachments/assets/63ce7d88-758d-4c36-a94e-1394bfcd5b73
 
 Click the image above to open the complete demonstration video.
 
