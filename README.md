@@ -13,7 +13,7 @@ An autonomous robotic manipulation pipeline in which a simulated Franka Emika Pa
 
 ## Demo
 
-[![Watch the complete pick–shake–place demo](docs/media/04_continuous_shake.png)](docs/media/05_complete_pick_shake_place.mp4)
+[![Watch the complete pick–shake–place demo](docs/media/04_continuous_shake.png)](docs/media/05_complete_pick_shake_place.mp4?raw=1)
 
 Click the image above to open the complete demonstration video.
 
@@ -63,7 +63,7 @@ flowchart TD
 
 | Continuous shake | Complete run |
 |---|---|
-| ![Continuous shaking](docs/media/04_continuous_shake.png) | [Open MP4 demo](docs/media/05_complete_pick_shake_place.mp4) |
+| ![Continuous shaking](docs/media/04_continuous_shake.png) | [Open MP4 demo](docs/media/05_complete_pick_shake_place.mp4?raw=1) |
 
 ## ROS 2 packages
 
