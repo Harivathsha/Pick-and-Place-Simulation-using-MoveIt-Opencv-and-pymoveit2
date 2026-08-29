@@ -15,4 +15,28 @@
       </plugin>
   </gazebo>
 
+  <!-- Physically connects the bottle to the robot during grasping -->
+  <gazebo>
+    <plugin
+      filename="gz-sim-detachable-joint-system"
+      name="gz::sim::systems::DetachableJoint">
+
+      <!-- Moving physics link belonging to the Panda model -->
+      <parent_link>panda_link7</parent_link>
+
+      <!-- Gazebo model and link defined in empty.world -->
+      <child_model>bottle</child_model>
+      <child_link>bottle_link</child_link>
+
+      <!-- Runtime command topics -->
+      <detach_topic>/bottle/detach</detach_topic>
+      <attach_topic>/bottle/attach</attach_topic>
+
+      <!-- Reports whether the fixed joint exists -->
+      <output_topic>/bottle/attachment_state</output_topic>
+
+    </plugin>
+  </gazebo>
+
+  
 </robot>

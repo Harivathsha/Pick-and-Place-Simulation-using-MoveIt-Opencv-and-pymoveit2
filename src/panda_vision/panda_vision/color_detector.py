@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+from email import message
+
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
 import cv2
 import numpy as np
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import String
 from cv_bridge import CvBridge
 import tf2_ros
@@ -28,14 +30,149 @@ class ColorDetector(Node):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
-        # Camera intrinsic parameters (from your SDF)
-        self.fx = 585.0
-        self.fy = 588.0
-        self.cx = 320.0
-        self.cy = 160.0
+        self.declare_parameter(
+            "bottle_center_plane_z",
+            0.04,
+        )
+
+        self.bottle_center_plane_z = float(
+            self.get_parameter(
+                "bottle_center_plane_z"
+            ).value
+        )
+
+        self.fx = None
+        self.fy = None
+        self.cx = None
+        self.cy = None
+        self.camera_frame = None
+
+        self.camera_info_sub = self.create_subscription(
+            CameraInfo,
+            "/camera/camera_info",
+            self.camera_info_callback,
+            10,
+        )
 
         self.get_logger().info("Color Detector Node Started with TF2 lookup transform")
+    def camera_info_callback(
+        self,
+        message: CameraInfo,
+    ) -> None:
+        """Store the calibrated camera intrinsics."""
 
+        self.fx = float(message.k[0])
+        self.fy = float(message.k[4])
+        self.cx = float(message.k[2])
+        self.cy = float(message.k[5])
+
+        self.camera_frame = (
+            message.header.frame_id
+            or "camera_link_optical"
+        )
+
+        self.get_logger().info(
+            "[CAMERA CALIBRATION] "
+            f"frame={self.camera_frame} | "
+            f"fx={self.fx:.2f}, fy={self.fy:.2f}, "
+            f"cx={self.cx:.2f}, cy={self.cy:.2f}"
+        )
+
+        # Intrinsics remain constant, so one message is sufficient.
+        self.destroy_subscription(
+            self.camera_info_sub
+        )
+        self.camera_info_sub = None
+
+    def pixel_to_base_point(
+        self,
+        pixel_u: float,
+        pixel_v: float,
+    ) -> np.ndarray:
+        """Project an image pixel onto the bottle-centre plane."""
+
+        if (
+            self.fx is None
+            or self.fy is None
+            or self.cx is None
+            or self.cy is None
+            or self.camera_frame is None
+        ):
+            raise RuntimeError(
+                "CameraInfo has not arrived yet"
+            )
+
+        transform = self.tf_buffer.lookup_transform(
+            "panda_link0",
+            self.camera_frame,
+            rclpy.time.Time(),
+            timeout=Duration(seconds=1.0),
+        )
+
+        camera_origin_base = np.array(
+            [
+                transform.transform.translation.x,
+                transform.transform.translation.y,
+                transform.transform.translation.z,
+            ],
+            dtype=float,
+        )
+
+        quaternion_xyzw = [
+            transform.transform.rotation.x,
+            transform.transform.rotation.y,
+            transform.transform.rotation.z,
+            transform.transform.rotation.w,
+        ]
+
+        rotation_base_from_camera = (
+            tf_transformations.quaternion_matrix(
+                quaternion_xyzw
+            )[:3, :3]
+        )
+
+        # In a ROS optical frame:
+        # +X points image-right
+        # +Y points image-down
+        # +Z points forward from the camera.
+        ray_camera = np.array(
+            [
+                (pixel_u - self.cx) / self.fx,
+                (pixel_v - self.cy) / self.fy,
+                1.0,
+            ],
+            dtype=float,
+        )
+
+        ray_camera /= np.linalg.norm(ray_camera)
+
+        ray_base = (
+            rotation_base_from_camera @ ray_camera
+        )
+
+        if abs(ray_base[2]) < 1e-8:
+            raise RuntimeError(
+                "Camera ray is parallel to the target plane"
+            )
+
+        ray_scale = (
+            self.bottle_center_plane_z
+            - camera_origin_base[2]
+        ) / ray_base[2]
+
+        if ray_scale <= 0.0:
+            raise RuntimeError(
+                "Target plane is behind the camera"
+            )
+
+        point_base = (
+            camera_origin_base
+            + ray_scale * ray_base
+        )
+
+        return point_base
+
+    
     def image_callback(self, msg):
         try:
             # Convert ROS Image -> OpenCV BGR
@@ -67,7 +204,7 @@ class ColorDetector(Node):
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
             for cnt in contours:
-                if cv2.contourArea(cnt) > 1:  # Increased minimum area threshold
+                if cv2.contourArea(cnt) > 50:  # Increased minimum area threshold
                     x, y, w, h = cv2.boundingRect(cnt)
                     cx_pix, cy_pix = x + w // 2, y + h // 2
 
@@ -76,57 +213,41 @@ class ColorDetector(Node):
                     cv2.putText(frame, color_id, (x, y - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
 
-                    # Convert pixel -> camera frame
-                    Z = 0.1  # Assumed depth/distance
-                    Y = (cx_pix - self.cx) * Z / self.fx * -10
-                    X = (cy_pix - self.cy) * Z / self.fy
 
                     try:
-                        # Lookup transform camera_link -> panda_link0
-                        # Use Time(seconds=0) for latest available transform
-                        t = self.tf_buffer.lookup_transform(
-                            "panda_link0", 
-                            "camera_link", 
-                            rclpy.time.Time(),
-                            timeout=Duration(seconds=1.0))
+                        point_base = self.pixel_to_base_point(
+                            pixel_u=cx_pix,
+                            pixel_v=cy_pix,
+                        )
 
-                        # Convert to numpy transform matrix
-                        trans = np.array([
-                            t.transform.translation.x,
-                            t.transform.translation.y,
-                            t.transform.translation.z
-                        ])
-                        
-                        rot = [
-                            t.transform.rotation.x,
-                            t.transform.rotation.y,
-                            t.transform.rotation.z,
-                            t.transform.rotation.w
-                        ]
-                        
-                        # Create 4x4 transformation matrix
-                        T = tf_transformations.quaternion_matrix(rot)
-                        T[:3, 3] = trans
+                        message_text = (
+                            f"{color_id},"
+                            f"{point_base[0]:.4f},"
+                            f"{point_base[1]:.4f},"
+                            f"{point_base[2]:.4f}"
+                        )
 
-                        # Transform point from camera frame to base frame
-                        pt_cam = np.array([X, Y, Z, 1.0])
-                        pt_base = T @ pt_cam
+                        self.coords_pub.publish(
+                            String(data=message_text)
+                        )
 
-                        # Adjust X coordinate for blue and green
-                        if color_id == "B":
-                            pt_base[1] -= 0.0215
-                        elif color_id == "G":
-                            pt_base[1] += 0.02
+                        self.get_logger().info(
+                            f"[DETECTED {color_id}] "
+                            f"pixel=({cx_pix}, {cy_pix}) | "
+                            f"base=({point_base[0]:.3f}, "
+                            f"{point_base[1]:.3f}, "
+                            f"{point_base[2]:.3f})"
+                        )
 
-                        # Publish color ID + coordinates in panda_link0 frame
-                        msg_str = f"{color_id},{pt_base[0]:.3f},{pt_base[1]:.3f},{pt_base[2]:.3f}"
-                        self.coords_pub.publish(String(data=msg_str))
-                        self.get_logger().info(msg_str)
-                        
-                    except (tf2_ros.LookupException, 
-                            tf2_ros.ConnectivityException, 
-                            tf2_ros.ExtrapolationException) as e:
-                        self.get_logger().warn(f"TF lookup failed: {e}")
+                    except (
+                        tf2_ros.LookupException,
+                        tf2_ros.ConnectivityException,
+                        tf2_ros.ExtrapolationException,
+                        RuntimeError,
+                    ) as error:
+                        self.get_logger().warn(
+                            f"Could not project detected pixel: {error}"
+                        )
                     except Exception as e:
                         self.get_logger().error(f"Unexpected error in TF transform: {e}")
 

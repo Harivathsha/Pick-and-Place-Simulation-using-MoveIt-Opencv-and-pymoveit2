@@ -30,3 +30,25 @@
   ros_type_name: "tf2_msgs/msg/TFMessage"
   gz_type_name: "gz.msgs.Pose_V"
   direction: "GZ_TO_ROS"
+
+# ROS 2 requests physical attachment
+- ros_topic_name: "/bottle/attach"
+  gz_topic_name: "/bottle/attach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  direction: ROS_TO_GZ
+
+# ROS 2 requests physical detachment
+- ros_topic_name: "/bottle/detach"
+  gz_topic_name: "/bottle/detach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  direction: ROS_TO_GZ
+
+# Gazebo reports the attachment state
+# Gazebo reports "attached" or "detached"
+- ros_topic_name: "/bottle/attachment_state"
+  gz_topic_name: "/bottle/attachment_state"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "gz.msgs.StringMsg"
+  direction: GZ_TO_ROS

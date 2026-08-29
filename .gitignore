@@ -1,0 +1,45 @@
+# ROS 2 / colcon generated outputs
+build/
+install/
+log/
+
+# Local backups and archives
+working_backups/
+src.zip
+*.zip
+*.tar
+*.tar.gz
+
+# Python-generated files
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editor and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ROS bags and experiment outputs
+*.bag
+*.db3
+*.mcap
+*.log
+results/
+runs/
+
+# Raw media: keep only the selected, compressed portfolio media
+docs/media/raw/
+*.webm
+*.mkv
+

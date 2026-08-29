@@ -9,7 +9,16 @@ from ament_index_python.packages import get_package_share_directory
 from moveit_configs_utils import MoveItConfigsBuilder
 from moveit_configs_utils.launches import generate_move_group_launch
 from moveit_configs_utils.launches import generate_moveit_rviz_launch
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    SetEnvironmentVariable,
+    ExecuteProcess,
+    RegisterEventHandler,
+    TimerAction,
+)
 
+from launch.event_handlers import OnProcessExit
 
 def generate_launch_description():
 
@@ -61,7 +70,7 @@ def generate_launch_description():
     default_world = os.path.join(
         get_package_share_directory(package_name),
         'worlds',
-        'empty.world'
+        'empty_day1.world'
         )    
     
     world = LaunchConfiguration('world')
@@ -107,7 +116,34 @@ def generate_launch_description():
             {'use_sim_time': LaunchConfiguration('use_sim_time')},
         ]
     )
-
+    automatic_bottle_detach = RegisterEventHandler(
+    OnProcessExit(
+        target_action=spawn_entity,
+        on_exit=[
+            TimerAction(
+                period=2.0,
+                actions=[
+                    ExecuteProcess(
+                        cmd=[
+                            "ros2",
+                            "topic",
+                            "pub",
+                            "--rate",
+                            "2",
+                            "--times",
+                            "10",
+                            "/bottle/detach",
+                            "std_msgs/msg/Empty",
+                            "{}",
+                        ],
+                        output="screen",
+                        emulate_tty=True,
+                    )
+                ],
+            )
+        ],
+    )
+)
 
     bridge_params = os.path.join(get_package_share_directory(package_name),'config','gz_bridge.yaml')
     ros_gz_bridge = Node(
@@ -169,9 +205,10 @@ def generate_launch_description():
         rsp,
         world_arg,
         gazebo,
+        ros_gz_bridge,
+        automatic_bottle_detach,
         spawn_entity,
         rviz_node,
-        ros_gz_bridge,
         joint_trajectory_controller_spawner,
         joint_state_broadcaster_spawner,
         # joint_state_publisher_gui_node,
