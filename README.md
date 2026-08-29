@@ -16,8 +16,6 @@ An autonomous robotic manipulation pipeline in which a simulated Franka Emika Pa
 
 https://github.com/user-attachments/assets/63ce7d88-758d-4c36-a94e-1394bfcd5b73
 
-Click the image above to open the complete demonstration video.
-
 ## What the system does
 
 1. Detects the selected bottle colour from the simulated camera feed.
