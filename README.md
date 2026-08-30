@@ -60,8 +60,8 @@ flowchart TD
 |---|---|
 | ![Bottle detection](docs/media/02_vision_detection.png) | ![Grasp and lift](docs/media/03_grasp_and_lift.png) |
 
-| Continuous shake | Complete run |
-|---|---|
+| Continuous shake | 
+|---|
 | ![Continuous shaking](docs/media/04_continuous_shake.png) |
 
 ## ROS 2 packages
